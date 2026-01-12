@@ -1,5 +1,6 @@
 package com.markduenas.markdownviewer
 
+import platform.Foundation.NSBundle
 import platform.UIKit.UIDevice
 
 class IOSPlatform: Platform {
@@ -7,3 +8,29 @@ class IOSPlatform: Platform {
 }
 
 actual fun getPlatform(): Platform = IOSPlatform()
+
+actual fun getAppVersion(): String {
+    val version = NSBundle.mainBundle.infoDictionary?.get("CFBundleShortVersionString") as? String ?: "1.0"
+    val build = NSBundle.mainBundle.infoDictionary?.get("CFBundleVersion") as? String ?: "1"
+    return "$version ($build)"
+}
+
+object IOSInitialContentHolder {
+    var initialContent: String? = null
+    var initialFileName: String? = null
+}
+
+actual fun getInitialContent(): InitialContent? {
+    val content = IOSInitialContentHolder.initialContent
+    val fileName = IOSInitialContentHolder.initialFileName
+    return if (content != null && fileName != null) {
+        InitialContent(content, fileName)
+    } else {
+        null
+    }
+}
+
+actual fun clearInitialContent() {
+    IOSInitialContentHolder.initialContent = null
+    IOSInitialContentHolder.initialFileName = null
+}

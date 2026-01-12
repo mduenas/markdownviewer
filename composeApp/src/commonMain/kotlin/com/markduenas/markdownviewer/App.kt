@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +34,7 @@ import com.markduenas.markdownviewer.ui.components.EmptyState
 import com.markduenas.markdownviewer.ui.components.ErrorDisplay
 import com.markduenas.markdownviewer.ui.components.LoadingIndicator
 import com.markduenas.markdownviewer.ui.components.MarkdownContent
+import com.markduenas.markdownviewer.ui.dialogs.AboutDialog
 import com.markduenas.markdownviewer.ui.dialogs.RecentFilesDialog
 import com.markduenas.markdownviewer.ui.dialogs.UrlInputDialog
 import com.markduenas.markdownviewer.ui.theme.MarkdownViewerTheme
@@ -55,10 +57,25 @@ fun App() {
         var showMenu by remember { mutableStateOf(false) }
         var showUrlDialog by remember { mutableStateOf(false) }
         var showRecentDialog by remember { mutableStateOf(false) }
+        var showAboutDialog by remember { mutableStateOf(false) }
         var recentItems by remember { mutableStateOf<List<RecentItem>>(emptyList()) }
 
         val coroutineScope = rememberCoroutineScope()
         val urlFetcher = remember { UrlFetcher() }
+
+        // Check for initial content from intent/document open
+        LaunchedEffect(Unit) {
+            getInitialContent()?.let { initial ->
+                viewerState = ViewerState(
+                    source = ContentSource.LocalFile(
+                        path = initial.fileName,
+                        name = initial.fileName
+                    ),
+                    content = initial.content
+                )
+                clearInitialContent()
+            }
+        }
 
         // Recent items storage
         val storage = rememberKeyValueStorage()
@@ -148,6 +165,15 @@ fun App() {
                                     showUrlDialog = true
                                 }
                             )
+                            if (viewerState.hasContent) {
+                                DropdownMenuItem(
+                                    text = { Text("Close") },
+                                    onClick = {
+                                        showMenu = false
+                                        viewerState = ViewerState()
+                                    }
+                                )
+                            }
                             DropdownMenuItem(
                                 text = { Text("Recent") },
                                 onClick = {
@@ -160,7 +186,7 @@ fun App() {
                                 text = { Text("About") },
                                 onClick = {
                                     showMenu = false
-                                    // TODO: Show about dialog
+                                    showAboutDialog = true
                                 }
                             )
                         }
@@ -252,6 +278,13 @@ fun App() {
                     recentItems = emptyList()
                 },
                 onDismiss = { showRecentDialog = false }
+            )
+        }
+
+        // About dialog
+        if (showAboutDialog) {
+            AboutDialog(
+                onDismiss = { showAboutDialog = false }
             )
         }
     }

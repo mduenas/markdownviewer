@@ -13,6 +13,7 @@
         <activity
             android:exported="true"
             android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:name=".MainActivity">
 
             <!-- Main launcher -->
