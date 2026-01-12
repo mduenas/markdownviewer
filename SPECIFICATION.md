@@ -1,4 +1,4 @@
-# Markdown Viewer Specification
+# Markdown Mermaid Specification
 
 ## Overview
 

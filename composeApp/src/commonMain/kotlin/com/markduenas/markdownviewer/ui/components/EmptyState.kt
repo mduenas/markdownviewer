@@ -30,7 +30,7 @@ fun EmptyState(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Markdown Viewer",
+            text = "Markdown Mermaid",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onSurface
         )

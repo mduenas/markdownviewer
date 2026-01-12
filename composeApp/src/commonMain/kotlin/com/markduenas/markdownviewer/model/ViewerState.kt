@@ -17,7 +17,7 @@ data class ViewerState(
         get() = when (val src = source) {
             is ContentSource.LocalFile -> src.name
             is ContentSource.RemoteUrl -> src.displayName
-            null -> "Markdown Viewer"
+            null -> "Markdown Mermaid"
         }
 
     /**

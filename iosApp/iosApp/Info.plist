@@ -6,8 +6,6 @@
 	<string>Markdown Mermaid</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
-
-	<!-- Document Types - Register as viewer for markdown files -->
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -24,8 +22,6 @@
 			</array>
 		</dict>
 	</array>
-
-	<!-- UTI Type Declaration for Markdown -->
 	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict>
@@ -52,5 +48,7 @@
 			</dict>
 		</dict>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
