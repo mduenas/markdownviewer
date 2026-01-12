@@ -16,3 +16,5 @@ data class InitialContent(
 expect fun getInitialContent(): InitialContent?
 
 expect fun clearInitialContent()
+
+expect fun openDeveloperApps()

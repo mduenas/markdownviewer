@@ -34,3 +34,12 @@ actual fun clearInitialContent() {
     IOSInitialContentHolder.initialContent = null
     IOSInitialContentHolder.initialFileName = null
 }
+
+actual fun openDeveloperApps() {
+    // Open App Store developer page directly
+    val urlString = "itms-apps://apps.apple.com/us/developer/mark-duenas/id1083533055"
+    val url = platform.Foundation.NSURL.URLWithString(urlString)
+    if (url != null) {
+        platform.UIKit.UIApplication.sharedApplication.openURL(url, emptyMap<Any?, Any?>()) { _ -> }
+    }
+}

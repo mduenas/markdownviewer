@@ -20,13 +20,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // Set app version from package info
+        // Set app version and activity context
         try {
             val packageInfo = packageManager.getPackageInfo(packageName, 0)
             AppVersionHolder.versionName = packageInfo.versionName ?: "1.0"
         } catch (e: Exception) {
             AppVersionHolder.versionName = "1.0"
         }
+        AppVersionHolder.activityContext = this
 
         // Handle incoming intent
         handleIntent(intent)
