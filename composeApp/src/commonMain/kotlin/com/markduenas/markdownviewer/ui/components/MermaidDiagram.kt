@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.multiplatform.webview.web.WebView
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
+import com.markduenas.markdownviewer.analytics.Analytics
 import markdownviewer.composeapp.generated.resources.Res
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 
@@ -84,7 +85,10 @@ fun MermaidDiagram(
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .clickable { showFullScreen = true }
+                .clickable {
+                    Analytics.logMermaidFullscreen()
+                    showFullScreen = true
+                }
         )
 
         // Fullscreen hint icon

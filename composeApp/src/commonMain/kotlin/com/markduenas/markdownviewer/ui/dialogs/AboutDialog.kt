@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.markduenas.markdownviewer.analytics.Analytics
 import com.markduenas.markdownviewer.getAppVersion
 import com.markduenas.markdownviewer.openDeveloperApps
 
@@ -60,7 +61,10 @@ fun AboutDialog(
                         textDecoration = TextDecoration.Underline
                     ),
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable { openDeveloperApps() }
+                    modifier = Modifier.clickable {
+                        Analytics.logMoreAppsClicked()
+                        openDeveloperApps()
+                    }
                 )
             }
         },

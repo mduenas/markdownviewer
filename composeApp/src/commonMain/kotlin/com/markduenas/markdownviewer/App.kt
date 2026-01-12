@@ -45,6 +45,7 @@ import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.name
 import io.github.vinceglb.filekit.path
 import io.github.vinceglb.filekit.readString
+import com.markduenas.markdownviewer.analytics.Analytics
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -74,6 +75,7 @@ fun App() {
                     content = initial.content
                 )
                 clearInitialContent()
+                Analytics.logFileOpened(initial.fileName, "intent")
             }
         }
 
@@ -103,6 +105,7 @@ fun App() {
                             isLoading = false
                         )
                         addToRecent(source)
+                        Analytics.logUrlOpened(url)
                     }
                     .onFailure { error ->
                         viewerState = ViewerState(
@@ -110,6 +113,7 @@ fun App() {
                             isLoading = false,
                             error = error.message ?: "Failed to load URL"
                         )
+                        Analytics.logError("url_load_failed", error.message ?: "Unknown error")
                     }
             }
         }
@@ -131,6 +135,7 @@ fun App() {
                         content = content
                     )
                     addToRecent(source)
+                    Analytics.logFileOpened(it.name, "file_picker")
                 }
             }
         }
@@ -171,6 +176,7 @@ fun App() {
                                     onClick = {
                                         showMenu = false
                                         viewerState = ViewerState()
+                                        Analytics.logFileClosed()
                                     }
                                 )
                             }
@@ -187,6 +193,7 @@ fun App() {
                                 onClick = {
                                     showMenu = false
                                     showAboutDialog = true
+                                    Analytics.logAboutShown()
                                 }
                             )
                         }
@@ -250,6 +257,7 @@ fun App() {
                 recentItems = recentItems,
                 onItemClick = { item ->
                     showRecentDialog = false
+                    Analytics.logRecentFileOpened(item.displayName)
                     when (item.type) {
                         RecentItemType.URL -> {
                             loadUrl(item.path)
