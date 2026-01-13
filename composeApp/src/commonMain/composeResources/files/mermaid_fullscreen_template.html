@@ -2,8 +2,10 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=4.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.2/dist/svg-pan-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -12,15 +14,11 @@
         }
         html, body {
             width: 100%;
-            min-height: 100vh;
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none;
         }
         body {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 16px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
         }
         body.light {
@@ -31,13 +29,22 @@
             background-color: #201A17;
             color: #ECE0DA;
         }
+        #diagram-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
         .mermaid {
-            width: auto;
-            max-width: none;
+            width: 100%;
+            height: 100%;
         }
         .mermaid svg {
+            width: 100%;
+            height: 100%;
             max-width: none !important;
-            height: auto !important;
+            max-height: none !important;
         }
         .error {
             color: #BA1A1A;
@@ -47,12 +54,66 @@
             white-space: pre-wrap;
             word-break: break-word;
         }
-        #diagram-container {
-            width: 100%;
+
+        /* Floating zoom controls */
+        #zoom-controls {
+            position: fixed;
+            bottom: 24px;
+            right: 16px;
             display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+        }
+        #zoom-controls button {
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            border: none;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
             justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        #zoom-controls button:active {
+            transform: scale(0.95);
+        }
+        body.light #zoom-controls button {
+            background: #FF6D00;
+            color: white;
+        }
+        body.dark #zoom-controls button {
+            background: #FFB380;
+            color: #201A17;
+        }
+        #reset-btn {
+            font-size: 12px !important;
+            font-weight: 600 !important;
+        }
+
+        /* Zoom level indicator */
+        #zoom-level {
+            position: fixed;
+            bottom: 24px;
+            left: 16px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+        }
+        body.light #zoom-level {
+            background: rgba(255, 251, 255, 0.9);
+            color: #201A17;
+        }
+        body.dark #zoom-level {
+            background: rgba(32, 26, 23, 0.9);
+            color: #ECE0DA;
         }
     </style>
 </head>
@@ -62,7 +123,75 @@
 {{MERMAID_CODE}}
         </pre>
     </div>
+
+    <div id="zoom-controls">
+        <button id="zoom-in-btn">+</button>
+        <button id="zoom-out-btn">-</button>
+        <button id="reset-btn">FIT</button>
+    </div>
+
+    <div id="zoom-level">100%</div>
+
     <script>
+        let panZoomInstance = null;
+
+        function updateZoomLevel() {
+            if (panZoomInstance) {
+                const zoom = Math.round(panZoomInstance.getZoom() * 100);
+                document.getElementById('zoom-level').textContent = zoom + '%';
+            }
+        }
+
+        // Custom touch handler using Hammer.js for better mobile experience
+        function createCustomEventsHandler() {
+            return {
+                haltEventListeners: ['touchstart', 'touchend', 'touchmove', 'touchleave', 'touchcancel'],
+                init: function(options) {
+                    const instance = options.instance;
+                    let initialScale = 1;
+                    let pannedX = 0;
+                    let pannedY = 0;
+
+                    this.hammer = new Hammer(options.svgElement, {
+                        inputClass: Hammer.TouchInput
+                    });
+
+                    this.hammer.get('pinch').set({ enable: true });
+                    this.hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+
+                    this.hammer.on('panstart panmove', function(ev) {
+                        if (ev.type === 'panstart') {
+                            pannedX = 0;
+                            pannedY = 0;
+                        }
+                        instance.panBy({ x: ev.deltaX - pannedX, y: ev.deltaY - pannedY });
+                        pannedX = ev.deltaX;
+                        pannedY = ev.deltaY;
+                    });
+
+                    this.hammer.on('pinchstart pinchmove', function(ev) {
+                        if (ev.type === 'pinchstart') {
+                            initialScale = instance.getZoom();
+                            instance.zoomAtPointBy(1, { x: ev.center.x, y: ev.center.y });
+                        }
+                        instance.zoomAtPoint(initialScale * ev.scale, { x: ev.center.x, y: ev.center.y });
+                    });
+
+                    this.hammer.on('pinchend panend', function() {
+                        updateZoomLevel();
+                    });
+
+                    this.hammer.on('doubletap', function(ev) {
+                        instance.zoomAtPoint(instance.getZoom() * 1.5, { x: ev.center.x, y: ev.center.y });
+                        updateZoomLevel();
+                    });
+                },
+                destroy: function() {
+                    this.hammer.destroy();
+                }
+            };
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             mermaid.initialize({
                 startOnLoad: true,
@@ -74,7 +203,58 @@
                 }
             });
 
-            mermaid.run().catch(function(error) {
+            mermaid.run().then(function() {
+                const svg = document.querySelector('.mermaid svg');
+                if (svg) {
+                    // Critical: Remove Mermaid's max-width constraint
+                    svg.style.maxWidth = 'none';
+                    svg.style.maxHeight = 'none';
+
+                    // Initialize svg-pan-zoom with custom touch handler
+                    panZoomInstance = svgPanZoom(svg, {
+                        zoomEnabled: true,
+                        controlIconsEnabled: false,
+                        fit: true,
+                        center: true,
+                        minZoom: 0.1,
+                        maxZoom: 20,
+                        zoomScaleSensitivity: 0.3,
+                        dblClickZoomEnabled: false, // We handle this via Hammer
+                        mouseWheelZoomEnabled: true,
+                        preventMouseEventsDefault: true,
+                        customEventsHandler: createCustomEventsHandler(),
+                        onZoom: updateZoomLevel,
+                        onPan: function() {}
+                    });
+
+                    // Initial fit and center
+                    setTimeout(function() {
+                        panZoomInstance.resize();
+                        panZoomInstance.fit();
+                        panZoomInstance.center();
+                        updateZoomLevel();
+                    }, 100);
+
+                    // Wire up control buttons
+                    document.getElementById('zoom-in-btn').addEventListener('click', function() {
+                        panZoomInstance.zoomIn();
+                        updateZoomLevel();
+                    });
+
+                    document.getElementById('zoom-out-btn').addEventListener('click', function() {
+                        panZoomInstance.zoomOut();
+                        updateZoomLevel();
+                    });
+
+                    document.getElementById('reset-btn').addEventListener('click', function() {
+                        panZoomInstance.resetZoom();
+                        panZoomInstance.resetPan();
+                        panZoomInstance.fit();
+                        panZoomInstance.center();
+                        updateZoomLevel();
+                    });
+                }
+            }).catch(function(error) {
                 document.getElementById('diagram-container').innerHTML =
                     '<div class="error">Mermaid Error: ' + error.message + '</div>';
             });
