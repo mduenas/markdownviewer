@@ -1,6 +1,7 @@
 package com.markduenas.markdownviewer.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,14 +19,18 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.markduenas.markdownviewer.getPlatform
 import com.multiplatform.webview.web.WebView
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import markdownviewer.composeapp.generated.resources.Res
@@ -39,6 +44,12 @@ fun FullScreenMermaidViewer(
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     var htmlContent by remember { mutableStateOf<String?>(null) }
+    val isAndroid = remember { getPlatform().name.startsWith("Android") }
+
+    // Zoom state for Android (Compose-level gesture handling)
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var offsetY by remember { mutableFloatStateOf(0f) }
 
     // Load and populate fullscreen template (enables native zoom/scroll)
     LaunchedEffect(code, isDarkTheme) {
@@ -90,6 +101,19 @@ fun FullScreenMermaidViewer(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .background(MaterialTheme.colorScheme.surface)
+                    .then(
+                        if (isAndroid) {
+                            Modifier.pointerInput(Unit) {
+                                detectTransformGestures { _, pan, zoom, _ ->
+                                    scale = (scale * zoom).coerceIn(0.5f, 4f)
+                                    offsetX += pan.x
+                                    offsetY += pan.y
+                                }
+                            }
+                        } else {
+                            Modifier
+                        }
+                    )
             ) {
                 htmlContent?.let { html ->
                     val webViewState = rememberWebViewStateWithHTMLData(
@@ -97,23 +121,26 @@ fun FullScreenMermaidViewer(
                         baseUrl = "https://localhost"
                     )
 
-                    // Enable zoom for Android WebView
-                    LaunchedEffect(webViewState) {
-                        webViewState.webSettings.apply {
-                            androidWebSettings.apply {
-                                supportZoom = true
-                                useWideViewPort = true
-                            }
-                        }
-                    }
-
                     WebView(
                         state = webViewState,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(
+                                if (isAndroid) {
+                                    Modifier.graphicsLayer(
+                                        scaleX = scale,
+                                        scaleY = scale,
+                                        translationX = offsetX,
+                                        translationY = offsetY
+                                    )
+                                } else {
+                                    Modifier
+                                }
+                            )
                     )
                 }
 
-                // Hint text
+                // Hint text / zoom indicator
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -125,7 +152,7 @@ fun FullScreenMermaidViewer(
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = "Pinch to zoom",
+                        text = if (isAndroid) "${(scale * 100).toInt()}%" else "Pinch to zoom",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
