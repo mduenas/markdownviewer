@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.multiplatform.webview.web.WebView
-import com.multiplatform.webview.web.WebViewState
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import markdownviewer.composeapp.generated.resources.Res
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -97,6 +96,16 @@ fun FullScreenMermaidViewer(
                         data = html,
                         baseUrl = "https://localhost"
                     )
+
+                    // Enable zoom for Android WebView
+                    LaunchedEffect(webViewState) {
+                        webViewState.webSettings.apply {
+                            androidWebSettings.apply {
+                                supportZoom = true
+                                useWideViewPort = true
+                            }
+                        }
+                    }
 
                     WebView(
                         state = webViewState,
